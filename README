@@ -1,0 +1,174 @@
+/**********************************************************
+* HW2: Metro Simulator
+* Comp 15
+* README
+* Gillian Feder
+* 10/12/21
+*********************************************************/
+
+Compile/run:
+     - Compile using
+            make MetroSim
+     - run executable with
+            ./MetroSim stationsFile passFile [commands]
+
+
+Program Purpose:
+
+This homework assignment simulates a running train to accommodate
+passengers arriving/departing a metro.  Learn how to design and
+modularize code and work with documented libraries.
+
+
+Acknowledgements: 
+I read a lot about vectors and file i/o from resources online. 
+I also used the lecture slides from class to learn more about how to use 
+streams and handle file i/o correctly.
+I also sought help from a number of TAs in office hours when it
+came to my final steps of debugging (nothing specific) as well as writing my
+makefile. 
+Some resources I used are below:
+-https://www.cplusplus.com/reference/vector/vector/    to learn about vectors
+-https://stackoverflow.com/questions/27770050/using-stdostream-as
+   -argument-to-a-print-function/27770465            to learn about ostream
+-https://www.codesdope.com/cpp-stdvector/       to learn about vector functions
+
+
+Files: 
+Passenger.h: 
+    Interface of the Passenger class that creates a public passenger 
+    struct as well as correlated constructors.
+
+Passenger.cpp: 
+    Implementation of the passenger class
+    Contains the passenger public print() function
+
+PassengerQueue.h:
+    Interface of the PassengerQueue class
+
+PassengerQueue.cpp:
+    Implementation of the PassengerQueue class. Main functionality of creating
+    a vector of passenger objects with a number of accompanied functions that 
+    make it act more like a queue.
+    
+main.cpp:
+     STUDENT TO-DO: Main file should be short and handle simple driver
+     functions such as reading in files.
+
+MetroSim.cpp:
+     STUDENT TO-DO: Implementation of MetroSim class.  Main
+     functionality of running the Metro Simulation, should be able to
+     move trains and deal with passengers going on/off the train.
+
+MetroSim.h:
+     STUDENT TO-DO: Interface of MetroSim class.
+
+stations.txt:
+     an example file containing a list of stations.
+
+test_commands.txt:
+     sample list of commands that you could give to the simulator
+
+the_metroSim:
+     reference implementation for students to see how the program is meant to 
+     run.
+
+
+Note:  the program should handle all cases.
+
+Data Structures:
+PassengerQueue is an implementation of the queue ADT that uses an underlying 
+vector of passenger objects and modified public functions that 
+make the vector act more like a queue. The functions included in the Passenger 
+Queue class use c++ supplied vector functions in order to create a level of 
+abstraction by making what is really a vector act more like a queue to the 
+client. For example, enqueue() and dequeue() use the vector functions erase(),
+begin(), and push_back() to modify the underlying vector. 
+MetroSim uses three vectors made up of PassengerQueue objects. Essentially, 
+they are each a vector made up of more vectors. Train and stationLines hold 
+queues of passengers both on the train and in line at each station 
+respectively. StationNames is a vector of strings that holds all the names of
+the stations from the stations.txt input file. The names of the stations
+correspond to the station at the same index in the other queues. Vector 
+functions such as push_back() and size() were used to add elements and search
+through these vectors of passengerQueues and strings. 
+I chose to strictly use vectors in this assignment because they come with a 
+variety of convenient functions that correlated with what I needed the lists 
+of passengers and passengerQueues to be able to do. Using vectors also
+eliminated the complications involving heap memory and memory leaks that 
+comes with using Linked Lists.
+
+Testing:
+
+  I created a unit_test.h file that was mainly responsible for testing the 
+functionality and correctness of my Passenger and PassengerQueue classes.
+The test functions in this file handle testing all associated functions of
+these classes as well as the constructor of the MetroSim class. Thus, my 
+unit testing functions were mainly useful in testing in the beginning of the 
+homework. Some edge cases I covered in these functions include dequeueing
+from an empty queue and making sure it failed, dequeueing twice and checking 
+that the size was updated correctly both times, and checking the size when the 
+queue is empty.
+  The main issue I had was that the query loop was not printing to the provided
+output file from the command line. I attempted to test what the issue was by
+printing to the output file in each function that the output file was passed 
+to.This way, I could track where/when the output file access was lost or
+messed up. I then realized, by changing the name of the output file i was 
+using on the command line, that it was likely because I was not closing the
+file that it was not able to save the information that was being printed to
+it. I had to change the type of the output file from an ostream to an ofstream
+object so I was then able to close it when m f command was read. 
+  The second issue I ran into was when I was testing my implementation through
+cin (instead of a commands input file) I began to randomly get segmentation 
+faults when I would put in the command m m. I ran the program over and over 
+adding a series of different passengers to the station lines and then
+moving through all the stations to try to determine exactly when and why 
+the seg fault error occurred. I determined that when the train left a station,
+it was often leaving a passenger behind, still in the station queue rather than
+in its corresponding queue on the train. I realized that in my for loop in the
+two functions called within the metro move function, I was modifying the size
+of the passenger queue while using it as my conditional for the for loop. Thus,
+some of the passengers would be skipped over behind because the size was  
+modified when passengers were dequeued. To fix this issue, I created an 
+integer local variable called queueSize to save the total size of the 
+Passengerqueue at hand prior to modifying it so the loop would iterate the 
+correct number of times. 
+  Since the rest of the MetroSim class handles a lot of sorting through
+input files and printing output, these functions were not tested in my unit  
+test implementation. Rather, I tested them through making my own input files  
+and diff testing with the provided reference implementation called the_metroSim.
+First, I tested my different output files when I ran both my implementation
+and the reference implementation on test_commands.txt. I then used the command
+diff my_output.txt out.txt and nothing came up, indicating they were the same.
+I also created my own test commands file (my_test_commands.txt)
+to make sure the output stayed identical between my implementation and the 
+reference implementation on a different series of inputs. I started off by 
+making a relatively short test commands file, and then continuously built
+on it and kept retesting both the reference implementation and my
+implementation on it and then diff testing the outputs. At one point, I had 
+my testing file just include the command 'm f'. Although when I diff tested 
+the output files, they remained identical, it was through running this test 
+commands file on both implementations that I realized that the state of the 
+program was to be printed before any commands were read. I realized this
+because when I ran ./the_MetroSim stations.txt out.txt my_test_commands.txt,
+it printed out an empty simulation. However, when I ran
+./MetroSim stations.txt my_output.txt my_test_commands.txt, it only printed 
+"Command? Thanks for playing MetroSim . Have a nice day" and did not print 
+the map of the train and passengers. So, as a result, I added a printMetSim()
+call prior to starting my query loop so it always prints out the state of the
+simulation even if m f is the first command input.
+
+Note: This homework comes partially implemented, but student must also
+create the driver and add class functionality.
+
+
+Part that you found most difficult:
+
+The part of this homework that I found to be the most challenging was figuring
+out the general design and layout of my entire program and included files. 
+It was the first program I had to write that had very little supplied starter 
+code, so seeing all the blank files for the first time and having to know 
+why to #include and how to generally set them up was overwhelming. 
+
+
+Time Spent on this assignment: Approximately 10 hours 
